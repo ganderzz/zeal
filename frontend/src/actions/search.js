@@ -25,15 +25,23 @@ export const executeSearch = async (name, ingredients) => {
     body: JSON.stringify({ name, ingredients }),
   })
   const searchResults = await response.json()
+
+  if (!response.ok) {
+    throw new Error(searchResults.error)
+  }
+
   return searchResults
 }
 
-// TODO: fix action
 export const searchRecipes = (name, ingredients) => {
-  return (dispatch) => {
+  return async (dispatch) => {
     dispatch(fetchingSearch())
-    return executeSearch(name, ingredients)
-      .then((res) => fetchedSearch(res))
-      .catch((err) => dispatch(failedSearch(err)))
+
+    try {
+      const res = await executeSearch(name, ingredients)
+      dispatch(fetchedSearch(res))
+    } catch (error) {
+      dispatch(failedSearch(error))
+    }
   }
 }

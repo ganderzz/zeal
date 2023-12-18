@@ -1,7 +1,6 @@
-import React, { Component } from "react"
+import React, { useEffect } from "react"
 import { connect } from "react-redux"
 import { bindActionCreators } from "redux"
-import { HomeWrapper } from "./styles"
 import Input from "@material-ui/core/Input"
 import Checkbox from "@material-ui/core/Checkbox"
 import FormControlLabel from "@material-ui/core/FormControlLabel"
@@ -11,86 +10,150 @@ import LinearProgress from "@material-ui/core/LinearProgress"
 import List from "@material-ui/core/List"
 import ListItem from "@material-ui/core/ListItem"
 import ListItemText from "@material-ui/core/ListItemText"
+import { useSearchParams } from "react-router-dom"
+import { Alert } from "../../components/alert"
 import * as actions from "../../actions"
+import Recipe from "../Recipe"
 
 const ingredientList = ["flour", "sugar", "salt", "butter", "milk"]
 
-class Home extends Component {
-  constructor(props) {
-    super(props)
-    this.handleSearch = this.handleSearch.bind(this)
-    this.handleIngredient = this.handleIngredient.bind(this)
-    this.fetchSearch = this.fetchSearch.bind(this)
-    this.state = {
-      term: "",
-      ingredients: ["milk"],
+const Home = ({
+  recipes,
+  isLoading,
+  error,
+  searchRecipes,
+  getRecipe,
+  resetRecipe,
+}) => {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const term = searchParams.get("term") ?? ""
+  const ingredients = searchParams.getAll("ingredients")
+  const recipeId = searchParams.get("recipeId")
+
+  useEffect(() => {
+    // Load the recipies if we have any search terms.
+    if (term || ingredients.length > 0) {
+      fetchSearch()
     }
+
+    if (recipeId) {
+      fetchRecipe()
+    }
+  }, [])
+
+  const updateQueryParams = (params) => {
+    for (const [key, value] of Object.entries(params)) {
+      if (!value || (Array.isArray(value) && value.length === 0)) {
+        searchParams.delete(key)
+        continue
+      }
+
+      if (Array.isArray(value)) {
+        // When dealing with multiple values, it's simpler to clear out the
+        // parameter key, then append the rest of the values.
+        searchParams.set(key, value[0])
+        for (const item of value.slice(1)) {
+          searchParams.append(key, item)
+        }
+      } else {
+        searchParams.set(key, value)
+      }
+    }
+
+    setSearchParams(searchParams)
   }
-  fetchSearch() {
-    // TODO: something is missing here for fetching
+
+  const fetchSearch = () => {
+    searchRecipes(term, ingredients)
   }
-  handleSearch(event) {
+
+  const fetchRecipe = () => {
+    getRecipe(recipeId)
+  }
+
+  const clearRecipe = () => {
+    searchParams.delete("recipeId")
+    setSearchParams(searchParams)
+    resetRecipe()
+  }
+
+  const handleSearch = (event) => {
     const term = event.target.value
-    this.setState({ term })
+    updateQueryParams({ term })
   }
-  handleIngredient(ingredient, event) {
-    const { ingredients } = { ...this.state }
+
+  const handleRecipeClick = (recipeId, event) => {
+    updateQueryParams({ recipeId })
+    fetchRecipe()
+  }
+
+  const handleIngredient = (ingredient, event) => {
+    const ingredientsClone = [...ingredients]
     if (event.target.checked) {
-      ingredients.push(ingredient)
+      ingredientsClone.push(ingredient)
     } else {
-      const foundIngredient = ingredients.indexOf(ingredient)
-      ingredients.splice(foundIngredient, 1)
+      const foundIngredient = ingredientsClone.indexOf(ingredient)
+      ingredientsClone.splice(foundIngredient, 1)
     }
-    this.setState({ ingredients })
+    updateQueryParams({ ingredients: ingredientsClone })
   }
-  render() {
-    const { term, ingredients } = this.state
-    const { recipes, isLoading } = this.props
-    return (
-      <HomeWrapper>
-        <Input
-          autoFocus={true}
-          fullWidth={true}
-          onChange={this.handleSearch}
-          value={term}
-        />
-        <div>
-          <h3>Ingredients on hand</h3>
-          {ingredientList.map((ingredient) => (
-            <FormControlLabel
-              key={ingredient}
-              control={
-                <Checkbox
-                  checked={ingredients.includes(ingredient)}
-                  onChange={this.handleIngredient.bind(this, ingredient)}
-                  value={ingredient}
-                />
-              }
-              label={ingredient}
-            />
+
+  return (
+    <>
+      {error && <Alert mb={2}>{error.toString()}</Alert>}
+
+      <Input
+        onChange={handleSearch}
+        value={term}
+        placeholder="Search..."
+        autoFocus
+        fullWidth
+      />
+      <div>
+        <h3>Ingredients on hand</h3>
+        {ingredientList.map((ingredient) => (
+          <FormControlLabel
+            key={ingredient}
+            control={
+              <Checkbox
+                checked={ingredients.includes(ingredient)}
+                onChange={(event) => handleIngredient(ingredient, event)}
+                value={ingredient}
+              />
+            }
+            label={ingredient}
+          />
+        ))}
+      </div>
+      <Button
+        onClick={() => {
+          fetchSearch()
+          clearRecipe()
+        }}
+      >
+        search
+      </Button>
+      <Divider />
+      {recipes && (
+        <List>
+          {recipes.map((recipe) => (
+            <ListItem
+              key={recipe.id}
+              onClick={(event) => handleRecipeClick(recipe.id, event)}
+              selected={recipe.id === recipeId}
+              button
+            >
+              <ListItemText primary={recipe.name} />
+            </ListItem>
           ))}
-        </div>
-        <Button onClick={this.fetchSearch}>search</Button>
-        <Divider />
-        {recipes && (
-          <List>
-            {recipes.map((recipe) => (
-              <ListItem key={recipe.id}>
-                <ListItemText primary={recipe.name} />
-              </ListItem>
-            ))}
-          </List>
-        )}
-        {isLoading && <LinearProgress />}
-        <Divider />
-        {/*
-          TODO: Add a recipe component here.
-          I'm expecting you to have it return null or a component based on the redux state, not passing any props from here
-          I want to see how you wire up a component with connect and build actions.
-        */}
-      </HomeWrapper>
-    )
-  }
+        </List>
+      )}
+      {isLoading && <LinearProgress />}
+      <Divider />
+
+      <Recipe />
+    </>
+  )
 }
 
 const mapStateToProps = (state) => {
@@ -102,6 +165,8 @@ const mapDispatchToProps = (dispatch) =>
   bindActionCreators(
     {
       searchRecipes: actions.searchRecipes,
+      getRecipe: actions.getRecipe,
+      resetRecipe: actions.resetRecipe,
     },
     dispatch
   )

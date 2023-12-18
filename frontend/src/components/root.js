@@ -1,6 +1,6 @@
 import styled from "styled-components"
 
-export const HomeWrapper = styled.div`
+export const Root = styled.div`
   width: 75vw;
   height: 90vh;
   display: flex;
