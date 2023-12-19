@@ -1,5 +1,7 @@
 # What Can You Make
 
+[Find additional notes here.](/NOTES.md)
+
 ## Installation
 
 Run:
@@ -37,6 +39,6 @@ head to the `RUN` tab (the play button w/ a bug) and select `debug` and hit play
 ## Bonus (one of)
 
 1. add ci/cd using travis, circleCI, etc...
-1. containerize the application
+1. [x] containerize the application
 1. add deployments using heroku, digital ocean, etc...
 1. add integration tests using puppeteer, webdriver, playwright, etc...

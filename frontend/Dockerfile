@@ -23,3 +23,4 @@ RUN yarn build
 FROM nginxinc/nginx-unprivileged:latest as app
 COPY --from=build --chown=nginx:nginx /app/frontend/dist /usr/share/nginx/html
 USER nginx
+# `nginx-unprivileged` automatically exposes on port 8080
