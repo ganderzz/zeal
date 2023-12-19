@@ -12,11 +12,8 @@ const createRecipes = async (): Promise<void> => {
 }
 
 export const createAndConnectToServer = async (): Promise<typeof mongoose> => {
-  const mongod = new MongoMemoryServer({
-    autoStart: false,
-  })
-  await mongod.start()
-  const url = await mongod.getConnectionString()
+  const mongod = await MongoMemoryServer.create()
+  const url = mongod.getUri()
   const connection = await mongoose.connect(url, {
     useNewUrlParser: true,
     keepAlive: true,

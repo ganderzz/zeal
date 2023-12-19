@@ -43,9 +43,6 @@ module.exports = {
   },
   devServer: {
     port: 3000,
-    contentBase: staticDir,
-    publicPath: "/",
-    filename: "[name].bundle.js",
     historyApiFallback: true,
     proxy: {
       "/api/**": {
@@ -53,9 +50,9 @@ module.exports = {
         changeOrigin: true,
       },
     },
-    watchOptions: {
-      aggregateTimeout: 300,
-      poll: 1000,
+    static: {
+      directory: staticDir,
+      publicPath: "/",
     },
   },
   plugins: [
